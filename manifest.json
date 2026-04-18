@@ -1,0 +1,17 @@
+{
+  "name": "Neural Grid Tic Tac Toe",
+  "short_name": "NeuralGrid",
+  "description": "A cyberpunk themed Tic Tac Toe game",
+  "start_url": "code.html",
+  "display": "standalone",
+  "background_color": "#0e0e14",
+  "theme_color": "#81ecff",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Neural Grid - Tic Tac Toe</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#0e0e14" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script
+        id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "tertiary-fixed-dim": "#d87dff", "on-secondary-fixed": "#620061", "surface-container-high": "#1f1f27", "on-tertiary": "#390050", "surface-container-low": "#13131a", "primary-container": "#00e3fd", "on-secondary-container": "#fff5f9", "on-primary-fixed": "#003840", "tertiary-container": "#b90afc", "tertiary-fixed": "#e092ff", "inverse-primary": "#006976", "on-primary-fixed-variant": "#005762", "on-tertiary-fixed": "#2c003f", "error-container": "#9f0519", "error-dim": "#d7383b", background: "#0e0e14", "on-surface-variant": "#acaab3", "inverse-surface": "#fcf8ff", error: "#ff716c", "surface-container-highest": "#25252e", "on-secondary": "#400040", "surface-variant": "#25252e", "surface-container-lowest": "#000000", "on-error": "#490006", "secondary-container": "#a900a9", "tertiary-dim": "#b90afc", "on-background": "#f6f2fc", outline: "#76747d", "on-tertiary-container": "#ffffff", primary: "#81ecff", "primary-dim": "#00d4ec", "on-surface": "#f6f2fc", "primary-fixed": "#00e3fd", "on-primary-container": "#004d57", "secondary-dim": "#ff51fa", "secondary-fixed": "#ffbdf3", "inverse-on-surface": "#55545c", "surface-tint": "#81ecff", "on-error-container": "#ffa8a3", "primary-fixed-dim": "#00d4ec", "surface-container": "#191921", "surface-bright": "#2b2b35", secondary: "#ff51fa", "on-secondary-fixed-variant": "#920091", "on-tertiary-fixed-variant": "#600084", "outline-variant": "#48474f", "secondary-fixed-dim": "#ffa6f3", tertiary: "#d575ff", surface: "#0e0e14", "on-primary": "#005762", "surface-dim": "#0e0e14" }, borderRadius: { DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px" }, fontFamily: { headline: ["Space Grotesk"], body: ["Manrope"], label: ["Space Grotesk"], display: "Space Grotesk" } } } };</script>
+    <style>
+        .neon-text-primary {
+            text-shadow: 0 0 10px rgba(129, 236, 255, 0.6), 0 0 20px rgba(129, 236, 255, 0.4);
+        }
+
+        .neon-text-secondary {
+            text-shadow: 0 0 10px rgba(255, 81, 250, 0.6), 0 0 20px rgba(255, 81, 250, 0.4);
+        }
+
+        .laser-beam-h,
+        .laser-beam-v {
+            box-shadow: 0 0 15px theme('colors.primary'), 0 0 30px theme('colors.primary') inset;
+        }
+
+        /* --- New VFX Styles --- */
+        @keyframes camera-shake {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            20% {
+                transform: translate(-5px, 5px) rotate(-1deg);
+            }
+
+            40% {
+                transform: translate(5px, -5px) rotate(1deg);
+            }
+
+            60% {
+                transform: translate(-5px, -5px) rotate(-1deg);
+            }
+
+            80% {
+                transform: translate(5px, 5px) rotate(1deg);
+            }
+
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+        }
+
+        .animate-shake {
+            animation: camera-shake 0.2s cubic-bezier(.36, .07, .19, .97) both;
+        }
+
+        /* Ghost / Hover Symbol */
+        .ghost-symbol {
+            opacity: 0.3;
+            pointer-events: none;
+            position: absolute;
+        }
+
+        .ghost-symbol.scanline-flicker {
+            background: repeating-linear-gradient(to bottom,
+                    transparent,
+                    transparent 2px,
+                    rgba(255, 255, 255, 0.1) 3px,
+                    transparent 4px);
+            -webkit-background-clip: text;
+            animation: flicker 0.15s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0% {
+                opacity: 0.2;
+            }
+
+            100% {
+                opacity: 0.4;
+            }
+        }
+
+        /* Error Overload */
+        @keyframes error-pulse {
+            0% {
+                filter: drop-shadow(0 0 10px theme('colors.error'));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 40px theme('colors.error')) hue-rotate(-20deg);
+            }
+
+            100% {
+                filter: drop-shadow(0 0 10px theme('colors.error'));
+            }
+        }
+
+        .error-overload {
+            animation: error-pulse 0.4s ease-out;
+            pointer-events: none;
+        }
+
+        /* Particles */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 40;
+            animation: particle-burst 0.6s ease-out forwards;
+        }
+
+        @keyframes particle-burst {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(0);
+                opacity: 0;
+            }
+        }
+
+        /* Critical State (Win) */
+        .critical-bloom {
+            text-shadow: 0 0 30px currentColor, 0 0 60px currentColor, 0 0 90px currentColor !important;
+            transform: scale(1.1);
+            transition: all 0.3s ease-out;
+            z-index: 50;
+        }
+
+        /* Laser Connection */
+        .laser-connection {
+            position: absolute;
+            background: #fff;
+            height: 4px;
+            transform-origin: left center;
+            z-index: 45;
+            pointer-events: none;
+            box-shadow: 0 0 20px 5px theme('colors.primary');
+            /* Heat distortion simulated with blur and high contrast overlay */
+            backdrop-filter: blur(4px) brightness(1.5) contrast(1.5);
+            animation: laser-fire 0.3s ease-out forwards;
+        }
+
+        @keyframes laser-fire {
+            0% {
+                transform: scaleX(0);
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+                height: 8px;
+            }
+
+            100% {
+                transform: scaleX(1);
+                opacity: 0.8;
+                height: 4px;
+            }
+        }
+
+        /* Loser Glitch */
+        @keyframes glitch-dim {
+            0% {
+                opacity: 1;
+                transform: translate(0);
+            }
+
+            20% {
+                opacity: 0;
+                transform: translate(-2px, 2px);
+            }
+
+            40% {
+                opacity: 1;
+                transform: translate(2px, -2px);
+            }
+
+            60% {
+                opacity: 0.5;
+                transform: translate(0);
+            }
+
+            80% {
+                opacity: 0;
+            }
+
+            100% {
+                opacity: 0.15;
+                filter: grayscale(1);
+            }
+        }
+
+        .glitch-dim {
+            animation: glitch-dim 0.5s steps(2, end) forwards;
+        }
+
+        /* CRT Effects */
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
+        }
+
+        @keyframes crt-glitch {
+            0% {
+                transform: translate(0)
+            }
+
+            20% {
+                transform: translate(-2px, 1px)
+            }
+
+            40% {
+                transform: translate(-1px, -1px)
+            }
+
+            60% {
+                transform: translate(2px, 1px)
+            }
+
+            80% {
+                transform: translate(1px, -1px)
+            }
+
+            100% {
+                transform: translate(0)
+            }
+        }
+
+        .crt-flicker {
+            animation: crt-glitch 0.2s infinite;
+            opacity: 0.1;
+        }
+
+        /* Ultimate Board */
+        .global-cell {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .global-cell.active-board {
+            box-shadow: 0 0 20px rgba(129, 236, 255, 0.3) inset, 0 0 10px rgba(129, 236, 255, 0.5);
+            border-color: rgba(129, 236, 255, 0.8);
+            background: rgba(129, 236, 255, 0.05);
+        }
+
+        .global-cell.inactive-board {
+            opacity: 0.3;
+            filter: grayscale(0.8);
+            pointer-events: none;
+        }
+
+        .local-cell {
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.2s;
+        }
+
+        .local-cell:hover {
+            background: rgba(129, 236, 255, 0.15);
+        }
+
+        .global-winner-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(14, 14, 20, 0.85);
+            backdrop-filter: blur(4px);
+            z-index: 10;
+        }
+
+        /* --- Light Mode Overrides --- */
+        html:not(.dark) body {
+            background-color: #ffffff !important;
+            color: #1f2937 !important;
+        }
+
+        html:not(.dark) header,
+        html:not(.dark) nav,
+        html:not(.dark) .hidden.md\:flex {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html:not(.dark) .bg-surface-container-high\/80 {
+            background-color: rgba(255, 255, 255, 0.9) !important;
+            outline-color: rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html:not(.dark) .text-on-surface-variant {
+            color: #4b5563 !important;
+        }
+
+        html:not(.dark) .crt-overlay {
+            display: none !important;
+        }
+
+        html:not(.dark) .local-cell {
+            background-color: rgba(255, 255, 255, 0.5) !important;
+            border-color: rgba(0, 0, 0, 0.1) !important;
+        }
+
+        html:not(.dark) .local-cell:hover {
+            background-color: rgba(0, 229, 255, 0.1) !important;
+        }
+
+        html:not(.dark) .laser-beam-h,
+        html:not(.dark) .laser-beam-v {
+            background-color: rgba(0, 0, 0, 0.1) !important;
+            box-shadow: none !important;
+            mix-blend-mode: normal !important;
+        }
+
+        html:not(.dark) .neon-text-primary,
+        html:not(.dark) .neon-text-secondary {
+            text-shadow: none !important;
+        }
+
+        html:not(.dark) #score-x,
+        html:not(.dark) #score-o {
+            color: #1f2937 !important;
+        }
+
+        html:not(.dark) #status-text {
+            color: #1f2937 !important;
+        }
+
+        html:not(.dark) .text-\[\#00E5FF\] {
+            color: #008eb3 !important;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background text-on-surface font-body h-screen flex flex-col overflow-hidden selection:bg-primary/30 selection:text-primary perspective-1000">
+    <div class="crt-overlay"></div>
+    <div class="crt-overlay crt-flicker"></div>
+    <!-- TopAppBar from JSON -->
+    <header
+        class="docked full-width top-0 bg-[#0e0e14]/80 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.5)] relative z-40">
+        <div class="flex justify-between items-center px-6 py-4 w-full">
+            <div class="flex items-center gap-4">
+                <img alt="User Avatar"
+                    class="w-10 h-10 rounded-full border border-primary/30 shadow-[0_0_15px_rgba(129,236,255,0.2)] object-cover"
+                    data-alt="holographic profile projection of a futuristic cybernetic face glowing faint blue"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiTddRQDuTDQD3dESA1xfhVItkHPUpgjJ01_fMc3WJ-lSxMQow3DynmHtzVPxXiSIVCs5eYma2lmn8NKC2dKfvafk7J0xMtklN5Ghr3oSCP5x2xAOl4q0k9MAm3CLUBB20uB7pDGWzufVyp1-4tqR1nakrEJJv5Pyq8EJCvpH_srWgNrbP09Fi5bCiP1HFIhy3LtIlVS1zVBlSe-GSPOQq9pSJxiGUL0v1rSG7Vhh2LN13pKSHMuXhkoleUzJMJ1WenQOpuTu_AyU" />
+            </div>
+            <div
+                class="text-lg font-bold text-[#00E5FF] drop-shadow-[0_0_10px_rgba(0,229,255,0.6)] font-['Space_Grotesk'] tracking-[0.2em] uppercase text-xs flex-1 text-center">
+                ULTIMATE_GRID_v2.0
+            </div>
+            <button id="theme-toggle"
+                class="text-[#00E5FF] hover:text-[#ff51fa] transition-colors duration-300 active:opacity-70 scale-95 transition-transform flex items-center justify-center">
+                <span class="material-symbols-outlined" id="theme-icon"
+                    style="font-variation-settings: 'FILL' 0;">light_mode</span>
+            </button>
+        </div>
+        <div class="bg-gradient-to-b from-[#00E5FF]/20 to-transparent h-[1px] w-full"></div>
+    </header>
+    <!-- Main Game Area -->
+    <main
+        class="flex-1 relative flex flex-col items-center justify-center p-4 md:p-8 overflow-y-auto z-10 pb-24 md:pb-8">
+        <!-- Atmospheric Background -->
+        <div class="absolute inset-0 z-0 pointer-events-none opacity-40">
+            <img alt="Rain Slicked Surface" class="w-full h-full object-cover mix-blend-overlay blur-sm"
+                data-alt="dark rain slicked asphalt surface reflecting neon lights in a futuristic cyberpunk city at night macro texture"
+                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCT0jSUbIvFHIQ_GFX_DT0jSgNF0BgKPweLTw_YSJxLqM2UnwlIWXxjduMKQ-uKlGKZIospe2GeP-4AWyLaN_k6UEC0oSnKJp9GPUa1cltjaQP0ZoZfqhs_b-I8JufWd6pwjrRhMI8W_9wZ8nSc6MUPaj0f0UWHvHZKgF8m7KSIVpY4H4bDoUG1GVesSQNm-MmbeZB9yAsc85W5A8HG_kbbCGfFtMXEB4Q6kD8CzYdN_m9yoLqb8tb-eqBFVt2ItqU4nxTSnJaPMdY" />
+            <div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-background via-transparent to-background"></div>
+        </div>
+        <!-- Content Container -->
+        <div class="relative z-10 w-full max-w-4xl flex flex-col items-center transform-style-3d transition-transform duration-100 ease-out"
+            id="3d-container">
+            <!-- Scoreboard -->
+            <div
+                class="w-full max-w-md mb-6 flex justify-between items-center bg-surface-container-high/80 backdrop-blur-xl p-4 md:p-6 rounded-lg outline outline-1 outline-outline-variant/15 shadow-[0_20px_50px_rgba(0,0,0,0.7)] relative overflow-hidden group">
+                <!-- Ambient glow layer -->
+                <div
+                    class="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5 pointer-events-none transition-opacity duration-500 opacity-50 group-hover:opacity-100">
+                </div>
+                <!-- Player X -->
+                <div class="flex flex-col items-center relative z-10">
+                    <span class="font-label text-on-surface-variant text-[10px] tracking-widest uppercase mb-2">Player
+                        X</span>
+                    <div id="score-x" class="font-headline text-primary text-4xl neon-text-primary leading-none">00
+                    </div>
+                    <div id="turn-indicator-x"
+                        class="h-1 w-8 bg-primary mt-3 shadow-[0_0_10px_theme(colors.primary)] rounded-full transition-opacity">
+                    </div>
+                </div>
+                <!-- Divider / Status -->
+                <div class="flex flex-col items-center justify-center relative z-10">
+                    <div
+                        class="px-3 py-1 bg-surface-container-lowest rounded-sm border border-outline-variant/30 flex items-center justify-center mb-2">
+                        <span
+                            class="font-label text-xs tracking-widest text-on-surface/70 uppercase text-center leading-tight"><span
+                                id="status-text">Turn</span></span>
+                    </div>
+                    <span id="current-turn-icon"
+                        class="material-symbols-outlined text-primary drop-shadow-[0_0_8px_theme(colors.primary)] transition-colors duration-300"
+                        style="font-variation-settings: 'FILL' 1;">close</span>
+                </div>
+                <!-- Player O -->
+                <div class="flex flex-col items-center relative z-10">
+                    <span class="font-label text-on-surface-variant text-[10px] tracking-widest uppercase mb-2">Player
+                        O</span>
+                    <div id="score-o" class="font-headline text-secondary text-4xl neon-text-secondary leading-none">00
+                    </div>
+                    <div id="turn-indicator-o"
+                        class="h-1 w-8 bg-surface-container-highest mt-3 rounded-full transition-opacity opacity-30">
+                    </div>
+                </div>
+            </div>
+            <!-- Holographic Tic-Tac-Toe Grid -->
+            <div id="grid-container" class="relative w-full max-w-[320px] sm:max-w-[400px] aspect-square mb-12">
+                <!-- The 3D Base Platform effect -->
+                <div class="absolute -inset-8 bg-primary/5 blur-[100px] rounded-full pointer-events-none transition-colors duration-300"
+                    id="platform-glow"></div>
+                <!-- Laser Grid Lines -->
+                <div
+                    class="absolute top-1/3 left-0 w-full h-[2px] bg-primary/80 laser-beam-h z-20 mix-blend-screen transition-colors duration-300 line-h1">
+                </div>
+                <div
+                    class="absolute top-2/3 left-0 w-full h-[2px] bg-primary/80 laser-beam-h z-20 mix-blend-screen transition-colors duration-300 line-h2">
+                </div>
+                <div
+                    class="absolute left-1/3 top-0 h-full w-[2px] bg-primary/80 laser-beam-v z-20 mix-blend-screen transition-colors duration-300 line-v1">
+                </div>
+                <div
+                    class="absolute left-2/3 top-0 h-full w-[2px] bg-primary/80 laser-beam-v z-20 mix-blend-screen transition-colors duration-300 line-v2">
+                </div>
+                <!-- Interactive Cells -->
+                <div id="game-grid" class="grid grid-cols-3 grid-rows-3 w-full h-full relative z-30">
+                    <!-- Cells generated by JS -->
+                </div>
+                <!-- Laser connections layer -->
+                <div id="laser-layer" class="absolute inset-0 z-45 pointer-events-none"></div>
+            </div>
+            <!-- Difficulty Selector (Hidden by default) -->
+            <div id="difficulty-selector" class="hidden flex-wrap justify-center gap-2 mb-6">
+                <button data-diff="easy"
+                    class="diff-btn px-4 py-1 rounded border border-primary/30 text-xs font-label uppercase text-on-surface-variant hover:text-primary hover:border-primary transition-all">Easy</button>
+                <button data-diff="medium"
+                    class="diff-btn px-4 py-1 rounded border border-primary/30 text-xs font-label uppercase text-on-surface-variant hover:text-primary hover:border-primary transition-all">Medium</button>
+                <button data-diff="hard"
+                    class="diff-btn px-4 py-1 rounded border border-primary/30 text-xs font-label uppercase text-on-surface-variant hover:text-primary hover:border-primary transition-all">Hard</button>
+                <button data-diff="impossible"
+                    class="diff-btn px-4 py-1 rounded border border-tertiary/50 text-xs font-label uppercase text-tertiary hover:bg-tertiary/10 transition-all shadow-[0_0_10px_theme(colors.tertiary)] bg-tertiary/20">Impossible</button>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex gap-4">
+                <button id="btn-reset"
+                    class="relative group bg-primary text-on-primary font-label text-sm tracking-[0.2em] uppercase px-6 py-3 rounded overflow-hidden hover:shadow-[0_0_30px_rgba(129,236,255,0.4)] transition-all duration-300 active:scale-95">
+                    <div
+                        class="absolute inset-0 bg-gradient-to-r from-primary to-primary-container opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    </div>
+                    <div
+                        class="absolute -inset-1 bg-white/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    </div>
+                    <span class="relative z-10 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-lg">restart_alt</span>
+                        RESET BOARD
+                    </span>
+                </button>
+                <button id="btn-reset-scores"
+                    class="relative group border border-error text-error font-label text-sm tracking-[0.2em] uppercase px-6 py-3 rounded overflow-hidden hover:shadow-[0_0_30px_rgba(255,113,108,0.4)] hover:bg-error/10 transition-all duration-300 active:scale-95">
+                    <span class="relative z-10 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-lg">delete</span>
+                        RESET SCORES
+                    </span>
+                </button>
+            </div>
+        </div>
+    </main>
+    <!-- BottomNavBar from JSON (Visible on Mobile) -->
+    <nav
+        class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-2 bg-[#0e0e14]/90 backdrop-blur-lg rounded-t-lg shadow-[0_-10px_40px_rgba(0,229,255,0.1)]">
+        <div
+            class="absolute top-0 left-0 w-full bg-gradient-to-t from-[#00E5FF]/10 to-transparent border-t border-[#00E5FF]/20 h-[1px]">
+        </div>
+        <!-- PvP Tab -->
+        <a id="nav-pvp-mobile"
+            class="flex flex-col items-center justify-center text-[#00E5FF] drop-shadow-[0_0_8px_rgba(0,229,255,0.8)] bg-[#00E5FF]/10 rounded-md py-1 px-4 active:scale-90 transition-all duration-200"
+            href="#">
+            <span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">group</span>
+            <span class="font-['Space_Grotesk'] text-[10px] tracking-widest font-bold">PvP</span>
+        </a>
+        <!-- AI Tab -->
+        <a id="nav-ai-mobile"
+            class="flex flex-col items-center justify-center text-slate-600 hover:text-[#d575ff] transition-all active:scale-90 duration-200 py-1 px-4"
+            href="#">
+            <span class="material-symbols-outlined mb-1">smart_toy</span>
+            <span class="font-['Space_Grotesk'] text-[10px] tracking-widest font-bold">VS AI</span>
+        </a>
+    </nav>
+    <!-- Web Navigation Cluster (Hidden on Mobile, Visible on md+) -->
+    <div
+        class="hidden md:flex fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-surface-container-high/80 backdrop-blur-xl p-2 rounded-lg outline outline-1 outline-outline-variant/20 shadow-[0_20px_40px_rgba(0,0,0,0.6)] gap-2">
+        <!-- PvP -->
+        <a id="nav-pvp-web"
+            class="flex items-center gap-2 text-primary bg-primary/10 rounded px-6 py-3 transition-all cursor-pointer"
+            href="#">
+            <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">group</span>
+            <span class="font-label text-xs tracking-widest font-bold uppercase">PvP</span>
+        </a>
+        <!-- AI -->
+        <a id="nav-ai-web"
+            class="flex items-center gap-2 text-on-surface-variant hover:text-tertiary hover:bg-surface-container-highest rounded px-6 py-3 transition-all cursor-pointer"
+            href="#">
+            <span class="material-symbols-outlined text-sm">smart_toy</span>
+            <span class="font-label text-xs tracking-widest font-bold uppercase">VS AI</span>
+        </a>
+        <!-- Match Winner Overlay -->
+        <div id="match-winner-overlay"
+            class="fixed inset-0 z-[100] flex items-center justify-center bg-background/90 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-500">
+            <h1 id="match-winner-text"
+                class="text-6xl md:text-9xl font-headline font-bold uppercase tracking-widest scale-50 transition-transform duration-500">
+                X WINS!
+            </h1>
+        </div>
+        <script src="main.js"></script>
+</body>
+
+</html>
